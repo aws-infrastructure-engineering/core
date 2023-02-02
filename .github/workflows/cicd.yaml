@@ -80,8 +80,8 @@ jobs:
       #         --format=json \
       #         --out-file=/tmp/infracost-base.json
 
-      # - name: Checkout branch
-      #   uses: actions/checkout@v3
+      - name: Checkout branch
+        uses: actions/checkout@v3
 
       # - name: Generate Infracost diff
       #   if: github.event_name == 'pull_request'
