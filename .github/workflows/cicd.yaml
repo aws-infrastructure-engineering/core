@@ -1,0 +1,158 @@
+name: 'Terragrunt CI/CD pipeline'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workload/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'workload/**'
+
+jobs:
+  changes:
+    name: Change detection
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      accounts: ${{ steps.filter.outputs.changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            workload: workload/**
+
+  terragrunt:
+    name: Terragrunt
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        account: ${{ fromJSON(needs.changes.outputs.accounts) }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    env:
+      WORKING_DIRECTORY: ${{ matrix.account }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.3.7
+          terraform_wrapper: false
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.3.0
+        with:
+          terragrunt_version: 0.43.1
+
+      - name: Setup Infracost
+        if: github.event_name == 'pull_request'
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Checkout base branch
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Generate Infracost cost estimate baseline
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost breakdown --path=. \
+              --format=json \
+              --out-file=/tmp/infracost-base.json
+
+      - name: Checkout branch
+        uses: actions/checkout@v3
+
+      - name: Generate Infracost diff
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost diff --path=. \
+              --format=json \
+              --compare-to=/tmp/infracost-base.json \
+              --out-file=/tmp/infracost.json
+
+      - name: Post Infracost comment
+        if: github.event_name == 'pull_request'
+        run: |
+          infracost comment github --path=/tmp/infracost.json \
+              --repo=$GITHUB_REPOSITORY \
+              --github-token=${{github.token}} \
+              --pull-request=${{github.event.pull_request.number}} \
+              --behavior=delete-and-new
+
+      - name: Terragrunt format
+        id: fmt
+        run: terragrunt hclfmt --terragrunt-check
+
+      - name: Terragrunt init
+        id: init
+        run: terragrunt run-all init
+
+      - name: Terragrunt validate
+        id: validate
+        run: terragrunt run-all validate
+
+      - name: Terragrunt plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: |
+          echo 'PLAN_OUTPUT<<EOF' >> $GITHUB_ENV
+          terragrunt run-all plan -no-color >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Post Terragrunt comment
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terragrunt Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terragrunt Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terragrunt Plan 📖\`${{ steps.plan.outcome }}\`
+            #### Terragrunt Validation 🤖\`${{ steps.validate.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${{ env.PLAN_OUTPUT }}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`${{ env.WORKING_DIRECTORY }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terragrunt plan status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Terragrunt apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terragrunt run-all apply --terragrunt-non-interactive
