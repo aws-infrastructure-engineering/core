@@ -59,46 +59,46 @@ jobs:
       - name: Setup Terragrunt
         uses: autero1/action-terragrunt@v1.3.0
         with:
-          terragrunt_version: 0.43.1
+          terragrunt_version: 0.43.0
 
-      - name: Setup Infracost
-        if: github.event_name == 'pull_request'
-        uses: infracost/actions/setup@v2
-        with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      # - name: Setup Infracost
+      #   if: github.event_name == 'pull_request'
+      #   uses: infracost/actions/setup@v2
+      #   with:
+      #     api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Checkout base branch
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
+      # - name: Checkout base branch
+      #   if: github.event_name == 'pull_request'
+      #   uses: actions/checkout@v3
+      #   with:
+      #     ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Generate Infracost cost estimate baseline
-        if: github.event_name == 'pull_request'
-        run: |
-          infracost breakdown --path=. \
-              --format=json \
-              --out-file=/tmp/infracost-base.json
+      # - name: Generate Infracost cost estimate baseline
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     infracost breakdown --path=. \
+      #         --format=json \
+      #         --out-file=/tmp/infracost-base.json
 
       - name: Checkout branch
         uses: actions/checkout@v3
 
-      - name: Generate Infracost diff
-        if: github.event_name == 'pull_request'
-        run: |
-          infracost diff --path=. \
-              --format=json \
-              --compare-to=/tmp/infracost-base.json \
-              --out-file=/tmp/infracost.json
+      # - name: Generate Infracost diff
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     infracost diff --path=. \
+      #         --format=json \
+      #         --compare-to=/tmp/infracost-base.json \
+      #         --out-file=/tmp/infracost.json
 
-      - name: Post Infracost comment
-        if: github.event_name == 'pull_request'
-        run: |
-          infracost comment github --path=/tmp/infracost.json \
-              --repo=$GITHUB_REPOSITORY \
-              --github-token=${{github.token}} \
-              --pull-request=${{github.event.pull_request.number}} \
-              --behavior=delete-and-new
+      # - name: Post Infracost comment
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     infracost comment github --path=/tmp/infracost.json \
+      #         --repo=$GITHUB_REPOSITORY \
+      #         --github-token=${{github.token}} \
+      #         --pull-request=${{github.event.pull_request.number}} \
+      #         --behavior=delete-and-new
 
       - name: Terragrunt format
         id: fmt
