@@ -3,7 +3,7 @@ include {
 }
 
 terraform {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-route53.git//modules/zones?ref=v2.10.2"
+  source = "tfr:///terraform-aws-modules/route53/aws//modules/zones?version=2.10.2"
 }
 
 inputs = {
