@@ -9,7 +9,7 @@ locals {
 
 module "kms" {
   source      = "terraform-aws-modules/kms/aws"
-  version     = "2.3.0"
+  version     = "1.5.0"
   aliases     = var.aliases
   description = "Shared KMS key for ${var.deployment_prefix}."
 
