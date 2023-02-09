@@ -15,7 +15,5 @@ locals {
 
 inputs = {
   deployment_prefix = local.deployment_prefix
-  aliases = [
-    "alias/${local.deployment_prefix}-kms"
-  ]
+  aliases           = ["${local.deployment_prefix}-kms"]
 }
