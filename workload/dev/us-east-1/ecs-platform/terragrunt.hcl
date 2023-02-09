@@ -23,5 +23,5 @@ locals {
 
 inputs = {
   deployment_prefix = local.deployment_prefix
-  key_id            = dependency.kms_key.outputs.key_id
+  kms_key_id        = dependency.kms_key.outputs.key_id
 }
