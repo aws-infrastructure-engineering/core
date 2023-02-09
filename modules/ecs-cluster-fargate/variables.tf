@@ -9,9 +9,9 @@ variable "container_insights" {
   default     = false
 }
 
-variable "kms_key_id" {
+variable "kms_key_arn" {
   type        = string
-  description = "KMS key ID to use for encrypting resources."
+  description = "KMS key ARN to use for encrypting resources."
 }
 
 variable "tags" {
