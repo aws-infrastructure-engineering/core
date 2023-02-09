@@ -3,15 +3,10 @@ variable "deployment_prefix" {
   description = "Prefix to use for resources created by this module."
 }
 
-variable "container_insights" {
-  type        = bool
-  description = "Enable CloudWatch Container Insights for the cluster."
-  default     = false
-}
-
-variable "kms_key_id" {
-  type        = string
-  description = "KMS key ID to use for encrypting resources."
+variable "aliases" {
+  type        = list(string)
+  description = "List of aliases for the KMS key."
+  default     = []
 }
 
 variable "tags" {
