@@ -32,7 +32,7 @@ inputs = {
             rulePriority = 1
             description  = "Keep only the 3 most recent images"
             selection = {
-              tagStatus   = "tagged"
+              tagStatus   = "any"
               countType   = "imageCountMoreThan"
               countNumber = 3
             }
