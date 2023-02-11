@@ -33,7 +33,7 @@ module "ecs" {
 
   cluster_settings = {
     name  = "containerInsights"
-    value = var.container_insights ? "enabled" : "disabled"
+    value = "enabled"
   }
 
   tags = local.tags
