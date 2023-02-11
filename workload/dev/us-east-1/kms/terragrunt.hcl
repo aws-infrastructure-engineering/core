@@ -16,4 +16,6 @@ locals {
 inputs = {
   deployment_prefix = local.deployment_prefix
   aliases           = ["${local.deployment_prefix}-kms"]
+
+  #TODO: Adjust list of key owners, administrators and users/service users
 }
