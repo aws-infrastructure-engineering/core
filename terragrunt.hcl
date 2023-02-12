@@ -26,7 +26,7 @@ provider "aws" {
 
 variable "default_tags" {
   type        = map(string)
-  description = "Default tags for AWS that will be attached to each resource."
+  description = "Default tags for AWS that will be attached to each resource"
 }
 EOF
 }
@@ -48,10 +48,10 @@ remote_state {
 }
 
 inputs = {
-  name_prefix  = local.name_prefix
-  account_name = local.account_name
-  environment  = local.environment
-  aws_region   = local.aws_region
+  terragrunt_name_prefix = local.name_prefix
+  account_name           = local.account_name
+  environment            = local.environment
+  aws_region             = local.aws_region
   default_tags = {
     "Terraform"   = "true",
     "Team"        = "infraops",

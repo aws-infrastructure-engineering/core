@@ -24,9 +24,14 @@ module "ecs" {
   }
 
   fargate_capacity_providers = {
+    FARGATE = {
+      default_capacity_provider_strategy = {
+        weight = var.capacity_provider_wight.fargate
+      }
+    }
     FARGATE_SPOT = {
       default_capacity_provider_strategy = {
-        weight = 100
+        weight = var.capacity_provider_wight.fargate_spot
       }
     }
   }
@@ -41,7 +46,7 @@ module "ecs" {
 
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/aws/ecs/${local.name}"
-  retention_in_days = 7
+  retention_in_days = var.ecs_log_retention_days
   kms_key_id        = var.kms_key_arn
 
   tags = local.tags
