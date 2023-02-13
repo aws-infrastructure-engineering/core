@@ -13,8 +13,8 @@ locals {
   deployment_prefix = "${local.account_name}-${local.environment}"
 }
 
-dependency "ecs_platform" {
-  config_path                             = "../ecs-platform"
+dependency "ecs_cluster_fargate" {
+  config_path                             = "../ecs-cluster-fargate"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     cluster_arn  = "arn:aws:ecs:us-east-1:123456789012:cluster/ecs-cluster"
@@ -22,7 +22,7 @@ dependency "ecs_platform" {
   }
 }
 
-dependency "vpc" {
+dependency "vpc_mgmt" {
   config_path                             = "../networking/vpc-mgmt"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
@@ -35,8 +35,8 @@ dependency "vpc" {
   }
 }
 
-dependency "ecs_shared_alb_sg" {
-  config_path                             = "../ecs-shared-alb-sg"
+dependency "shared_http_https_sg" {
+  config_path                             = "../shared-http-https-sg"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     security_group_id = "sg-12345678"
@@ -65,18 +65,18 @@ dependency "route53_zones" {
   }
 }
 
-dependency "kms_key" {
-  config_path                             = "../kms"
+dependency "shared_kms_key" {
+  config_path                             = "../shared-kms-key"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     key_arn = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
   }
 }
 
-
 inputs = {
-  ecs_cluster_arn  = dependency.ecs_platform.outputs.cluster_arn
-  ecs_cluster_name = dependency.ecs_platform.outputs.cluster_name
+  deployment_prefix = local.deployment_prefix
+  ecs_cluster_arn   = dependency.ecs_cluster_fargate.outputs.cluster_arn
+  ecs_cluster_name  = dependency.ecs_cluster_fargate.outputs.cluster_name
   controller_container_definition = {
     name            = "jenkins-controller"
     container_image = "jenkins/jenkins:lts-jdk11"
@@ -85,14 +85,14 @@ inputs = {
     java_opts       = "--Djenkins.install.runSetupWizard=false"
   }
 
-  vpc_id            = dependency.vpc.outputs.vpc_id
-  private_subnets   = dependency.vpc.outputs.private_subnets
-  ecs_shared_alb_sg = dependency.ecs_shared_alb_sg.outputs.security_group_id
+  vpc_id                = dependency.vpc_mgmt.outputs.vpc_id
+  private_subnets       = dependency.vpc_mgmt.outputs.private_subnets
+  alb_security_group_id = dependency.shared_http_https_sg.outputs.security_group_id
 
-  lb_dns_name           = dependency.ecs_shared_alb.outputs.lb_dns_name
-  lb_zone_id            = dependency.ecs_shared_alb.outputs.lb_zone_id
-  lb_listener_https_arn = dependency.ecs_shared_alb.outputs.https_listener_arns[0]
-  route53_zone_name     = dependency.route53_zones.outputs.route53_zone_name.public
+  alb_dns_name           = dependency.ecs_shared_alb.outputs.lb_dns_name
+  alb_zone_id            = dependency.ecs_shared_alb.outputs.lb_zone_id
+  alb_https_listener_arn = dependency.ecs_shared_alb.outputs.https_listener_arns[0]
+  route53_zone_name      = dependency.route53_zones.outputs.route53_zone_name.public
 
-  kms_key_arn = dependency.kms_key.outputs.key_arn
+  kms_key_arn = dependency.shared_kms_key.outputs.key_arn
 }

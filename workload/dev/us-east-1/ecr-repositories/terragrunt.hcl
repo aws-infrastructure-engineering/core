@@ -6,8 +6,8 @@ terraform {
   source = "tfr:///terraform-aws-modules/ecr/aws//wrappers?version=1.5.1"
 }
 
-dependency "kms_key" {
-  config_path                             = "../kms"
+dependency "shared_kms_key" {
+  config_path                             = "../shared-kms-key"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     key_arn = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
@@ -15,18 +15,17 @@ dependency "kms_key" {
 }
 
 locals {
-  repository_name = "jenkins-controller-ecs"
+  jenkins_controller_repository_name = "jenkins-controller-ecs"
 }
 
 inputs = {
   items = {
     jenkins_controller_ecs = {
-
-      repository_name                 = local.repository_name
+      repository_name                 = local.jenkins_controller_repository_name
       repository_image_tag_mutability = "MUTABLE"
 
       repository_encryption_type = "KMS"
-      repository_kms_key         = dependency.kms_key.outputs.key_arn
+      repository_kms_key         = dependency.shared_kms_key.outputs.key_arn
 
       #TODO: Update Reader and Writer ARNs or provide custom policy
 
@@ -48,7 +47,7 @@ inputs = {
       })
 
       tags = {
-        Name = local.repository_name
+        Name = local.jenkins_controller_repository_name
       }
     }
   }

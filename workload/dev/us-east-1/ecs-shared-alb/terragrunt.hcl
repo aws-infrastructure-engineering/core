@@ -10,22 +10,22 @@ terraform {
 locals {
   account_name = include.root.inputs.account_name
   environment  = include.root.inputs.environment
-  name         = "${local.account_name}-${local.environment}-ecs-shared-alb"
+  name         = "${local.account_name}-${local.environment}-${basename(get_terragrunt_dir())}"
 }
 
-dependency "acm" {
-  config_path                             = "../acm"
+dependency "acm_certificates" {
+  config_path                             = "../acm-certificates"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     wrapper = {
-      public = {
+      thesamcro_wildcard = {
         acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
       }
     }
   }
 }
 
-dependency "vpc" {
+dependency "vpc_mgmt" {
   config_path                             = "../networking/vpc-mgmt"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
@@ -38,8 +38,8 @@ dependency "vpc" {
   }
 }
 
-dependency "ecs_shared_alb_sg" {
-  config_path                             = "../ecs-shared-alb-sg"
+dependency "shared_http_https_sg" {
+  config_path                             = "../shared-http-https-sg"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
     security_group_id = "sg-12345678"
@@ -51,16 +51,17 @@ inputs = {
 
   load_balancer_type = "application"
 
-  vpc_id                = dependency.vpc.outputs.vpc_id
-  subnets               = dependency.vpc.outputs.public_subnets
+  vpc_id                = dependency.vpc_mgmt.outputs.vpc_id
+  subnets               = dependency.vpc_mgmt.outputs.public_subnets
   create_security_group = false
-  security_groups       = [dependency.ecs_shared_alb_sg.outputs.security_group_id]
+  security_groups       = [dependency.shared_http_https_sg.outputs.security_group_id]
 
   https_listeners = [
     {
       port            = 443
       protocol        = "HTTPS"
-      certificate_arn = dependency.acm.outputs.wrapper.thesamcro_wildcard.acm_certificate_arn
+      ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+      certificate_arn = dependency.acm_certificates.outputs.wrapper.thesamcro_wildcard.acm_certificate_arn
       action_type     = "fixed-response"
       fixed_response = {
         content_type = "text/plain"

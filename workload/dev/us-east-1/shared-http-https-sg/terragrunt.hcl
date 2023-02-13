@@ -10,10 +10,10 @@ terraform {
 locals {
   account_name = include.root.inputs.account_name
   environment  = include.root.inputs.environment
-  name         = "${local.account_name}-${local.environment}-ecs-shared-alb-sg"
+  name         = "${local.account_name}-${local.environment}-${basename(get_terragrunt_dir())}"
 }
 
-dependency "vpc" {
+dependency "vpc_mgmt" {
   config_path                             = "../networking/vpc-mgmt"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info", "show"]
   mock_outputs = {
@@ -23,8 +23,8 @@ dependency "vpc" {
 
 inputs = {
   name                = local.name
-  description         = "Security group for the shared ECS ALB"
-  vpc_id              = dependency.vpc.outputs.vpc_id
+  description         = "Shared security group with HTTP and HTTPS ingress rules"
+  vpc_id              = dependency.vpc_mgmt.outputs.vpc_id
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
   egress_rules        = ["all-all"]

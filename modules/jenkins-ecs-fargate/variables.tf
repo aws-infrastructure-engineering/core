@@ -1,15 +1,19 @@
-variable "ecs_cluster_arn" {
-  description = "The ARN of the ECS cluster to run the Jenkins controller task"
+variable "deployment_prefix" {
   type        = string
+  description = "Prefix to use for all resources created by this module"
+}
+
+variable "ecs_cluster_arn" {
+  type        = string
+  description = "The ARN of the ECS cluster to run the Jenkins controller task"
 }
 
 variable "ecs_cluster_name" {
-  description = "The name of the ECS cluster to run the Jenkins controller task"
   type        = string
+  description = "The name of the ECS cluster to run the Jenkins controller task"
 }
 
 variable "controller_container_definition" {
-  description = "Container definition for the Jenkins controller"
   type = object({
     name            = string
     container_image = string
@@ -17,14 +21,15 @@ variable "controller_container_definition" {
     jnlp_port       = number
     java_opts       = string
   })
+  description = "Container definition for the Jenkins controller"
 }
 
 variable "contoller_resources" {
-  description = "CPU and memory resources for the Jenkins controller"
   type = object({
     cpu    = number
     memory = number
   })
+  description = "CPU and memory resources for the Jenkins controller"
   default = {
     cpu    = 1024
     memory = 2048
@@ -32,71 +37,119 @@ variable "contoller_resources" {
 }
 
 variable "fargate_platform_version" {
-  description = "Fargate platform version to use"
   type        = string
+  description = "Fargate platform version to use"
   default     = "LATEST"
 }
 
 variable "controller_deployment_percentages" {
-  description = "Minimum and maximum deployment percentages for the Jenkins controller"
   type = object({
     min = number
     max = number
   })
+  description = "Minimum and maximum deployment percentages for the Jenkins controller"
   default = {
     min = 0
     max = 100
   }
 }
 
+variable "controller_health_check" {
+  type = object({
+    path                = string
+    interval            = number
+    timeout             = number
+    healthy_threshold   = number
+    unhealthy_threshold = number
+  })
+  description = "Health check configuration for the Jenkins controller"
+  default = {
+    path                = "/login"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 5
+  }
+}
+
 variable "vpc_id" {
-  description = "VPC ID to use for resources"
   type        = string
+  description = "VPC ID to use for resources"
 }
 
 variable "private_subnets" {
-  description = "List of private subnets to place workloads"
   type        = list(string)
+  description = "List of private subnets to place workloads"
 }
 
-variable "ecs_shared_alb_sg" {
+variable "alb_security_group_id" {
+  type        = string
   description = "Security group ID of the ALB shared for the ECS cluster"
-  type        = string
 }
 
-variable "lb_dns_name" {
-  description = "DNS name of the ALB"
+variable "alb_dns_name" {
   type        = string
+  description = "The DNS name of the load balancer"
 }
 
-variable "lb_zone_id" {
+variable "alb_zone_id" {
+  type        = string
   description = "The zone_id of the load balancer to assist with creating DNS records"
-  type        = string
 }
 
-variable "lb_listener_https_arn" {
-  description = "ARN of the HTTPS listener on the ALB"
+variable "alb_https_listener_arn" {
   type        = string
+  description = "The ARN of the HTTPS load balancer listeners created"
 }
 
 variable "route53_zone_name" {
-  description = "Root domain name for the Jenkins controller"
   type        = string
+  description = "Root domain name for the Jenkins controller"
+}
+
+variable "efs_performance_mode" {
+  type        = string
+  description = "The file system performance mode. Can be either `generalPurpose` or `maxIO`. Default is `generalPurpose`"
+  default     = "generalPurpose"
+}
+
+variable "efs_throughput_mode" {
+  type        = string
+  description = "Throughput mode for the file system. Defaults to `bursting`. Valid values: `bursting`, `provisioned`. When using `provisioned`, also set `provisioned_throughput_in_mibps`"
+  default     = "bursting"
+}
+
+variable "efs_provisioned_throughput_in_mibps" {
+  type        = number
+  description = "The throughput, measured in MiB/s, that you want to provision for the file system. Only applicable with `throughput_mode` set to `provisioned`"
+  default     = null
+}
+
+variable "lifecycle_policy" {
+  type = object({
+    transition_to_ia                    = string
+    transition_to_primary_storage_class = string
+  })
+  description = "Lifecycle policy for the EFS file system"
+  default = {
+    transition_to_ia                    = "AFTER_30_DAYS"
+    transition_to_primary_storage_class = "AFTER_1_ACCESS"
+  }
 }
 
 variable "controller_log_retention_days" {
-  description = "Number of days to retain Jenkins controller logs"
   type        = number
+  description = "Number of days to retain Jenkins controller logs"
   default     = 14
 }
 
 variable "kms_key_arn" {
-  description = "KMS key ARN to use for encrypting resources"
   type        = string
+  description = "KMS key ARN to use for encrypting resources"
 }
 
 variable "tags" {
-  description = "A map of tags to add to all resources created by this module"
   type        = map(string)
+  description = "A map of tags to add to all resources created by this module"
   default     = {}
 }

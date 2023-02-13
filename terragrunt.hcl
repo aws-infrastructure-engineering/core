@@ -4,12 +4,12 @@ locals {
   region_vars      = read_terragrunt_config(find_in_parent_folders("region.hcl", "${get_terragrunt_dir()}/region.hcl"))
   environment_vars = read_terragrunt_config(find_in_parent_folders("environment.hcl", "${get_terragrunt_dir()}/environment.hcl"))
 
-  name_prefix    = local.common_vars.locals.name_prefix
-  default_region = local.common_vars.locals.default_region
-  account_id     = local.account_vars.locals.account_id
-  account_name   = local.account_vars.locals.account_name
-  aws_region     = local.region_vars.locals.aws_region
-  environment    = local.environment_vars.locals.environment
+  s3_backend_prefix = "svc"
+  default_region    = local.common_vars.locals.default_region
+  account_id        = local.account_vars.locals.account_id
+  account_name      = local.account_vars.locals.account_name
+  aws_region        = local.region_vars.locals.aws_region
+  environment       = local.environment_vars.locals.environment
 }
 
 generate "provider" {
@@ -39,23 +39,24 @@ remote_state {
   }
   config = {
     encrypt                 = true
-    bucket                  = lower("${local.name_prefix}-${local.account_name}-${local.environment}-${local.aws_region}-terraform-state")
+    bucket                  = lower("${local.s3_backend_prefix}-${local.account_name}-${local.environment}-${local.aws_region}-terraform-state")
     key                     = "${path_relative_to_include()}/terraform.tfstate"
     region                  = local.default_region
-    dynamodb_table          = lower("${local.name_prefix}-${local.account_name}-${local.environment}-terraform-state-locks")
+    dynamodb_table          = lower("${local.s3_backend_prefix}-${local.account_name}-${local.environment}-terraform-state-locks")
     skip_bucket_root_access = true
   }
 }
 
 inputs = {
-  terragrunt_name_prefix = local.name_prefix
-  account_name           = local.account_name
-  environment            = local.environment
-  aws_region             = local.aws_region
+  account_name = local.account_name
+  account_id   = local.account_id
+  environment  = local.environment
+  aws_region   = local.aws_region
   default_tags = {
     "Terraform"   = "true",
     "Team"        = "infraops",
     "OwnerEmail"  = "ilya.melnik.svc@gmail.com"
+    "Account"     = local.account_name
     "Environment" = local.environment
   }
 }

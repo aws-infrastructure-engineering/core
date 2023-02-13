@@ -1,6 +1,6 @@
-variable "deployment_prefix" {
+variable "cluster_name" {
   type        = string
-  description = "Prefix to use for resources created by this module"
+  description = "Name of the ECS cluster"
 }
 
 variable "capacity_provider_wight" {
@@ -13,12 +13,6 @@ variable "capacity_provider_wight" {
     fargate      = 10
     fargate_spot = 90
   }
-}
-
-variable "container_insights" {
-  type        = bool
-  description = "Enable CloudWatch Container Insights for the cluster"
-  default     = false
 }
 
 variable "ecs_log_retention_days" {

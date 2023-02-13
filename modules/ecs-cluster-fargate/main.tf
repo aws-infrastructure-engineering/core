@@ -1,16 +1,8 @@
-locals {
-  name = "${var.deployment_prefix}-ecs-cluster-fargate"
-
-  tags = merge(
-    var.tags, { Name = local.name }
-  )
-}
-
 module "ecs" {
   source  = "terraform-aws-modules/ecs/aws"
   version = "4.1.3"
 
-  cluster_name = local.name
+  cluster_name = var.cluster_name
 
   cluster_configuration = {
     execute_command_configuration = {
@@ -41,13 +33,19 @@ module "ecs" {
     value = "enabled"
   }
 
-  tags = local.tags
+  tags = merge(
+    { Name = var.cluster_name },
+    var.tags
+  )
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
-  name              = "/aws/ecs/${local.name}"
+  name              = "/aws/ecs/${var.cluster_name}"
   retention_in_days = var.ecs_log_retention_days
   kms_key_id        = var.kms_key_arn
 
-  tags = local.tags
+  tags = merge(
+    { Name = var.cluster_name },
+    var.tags
+  )
 }
